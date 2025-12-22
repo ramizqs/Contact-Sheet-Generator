@@ -284,8 +284,28 @@ async function handleGenerate() {
     progressContainer.classList.add('hidden');
     
     if (result.success) {
+      // Build success message
+      let message = `Successfully generated ${result.count} contact sheet${result.count > 1 ? 's' : ''}`;
+      
+      // Add warning if some images failed to load
+      if (result.failedCount && result.failedCount > 0) {
+        message += `\n\n⚠️ Warning: ${result.failedCount} image${result.failedCount > 1 ? 's' : ''} could not be loaded and ${result.failedCount > 1 ? 'were' : 'was'} skipped.`;
+        
+        // Show first few failed files
+        if (result.failedFiles && result.failedFiles.length > 0) {
+          const showCount = Math.min(5, result.failedFiles.length);
+          message += `\n\nSkipped files:\n• ${result.failedFiles.slice(0, showCount).join('\n• ')}`;
+          if (result.failedFiles.length > showCount) {
+            message += `\n• ... and ${result.failedFiles.length - showCount} more`;
+          }
+          message += `\n\nNote: DNG files require proper RAW support. Check the console for details.`;
+        }
+        
+        message += `\n\nSuccessfully processed: ${result.processedCount} images`;
+      }
+      
       // Show results
-      resultsMessage.textContent = `Successfully generated ${result.count} contact sheet${result.count > 1 ? 's' : ''}!`;
+      resultsMessage.textContent = message;
       resultsSection.classList.remove('hidden');
       
       // Auto-open folder if checkbox is checked

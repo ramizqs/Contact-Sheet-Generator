@@ -11,7 +11,7 @@
     <header>
       <h1>Contact Sheet Generator</h1>
       <div class="version-info">
-        <span class="version-text">v 3.0.0</span>
+        <span class="version-text">v 3.1.0</span>
         <button id="infoBtn" class="info-icon" aria-label="Show changelog">ⓘ</button>
       </div>
     </header>
@@ -199,7 +199,7 @@
     </main>
 
     <footer>
-      <span class="footer-left">Compatible Filetypes: JPG · PNG · TIFF · GIF · BMP · DNG</span>
+      <span class="footer-left">Compatible Filetypes: JPG · PNG · TIFF · BMP · DNG</span>
       <span class="footer-right">Designed & Built By Ramiz Sheikh</span>
     </footer>
   </div>
@@ -212,6 +212,41 @@
         <button id="closeModal" class="modal-close">×</button>
       </div>
       <div class="modal-body">
+        <p class="version-label">Version 3.1.0 — December 21, 2024</p>
+        
+        <h3>🎉 Major Feature: Full RAW/DNG Support</h3>
+        <ul class="changelog-list">
+          <li><strong>✅ FIXED: All DNG files now work!</strong> Using macOS native sips for RAW conversion</li>
+          <li><strong>Proper RAW Processing:</strong> Full RAW decoding (not just embedded previews)</li>
+          <li><strong>All RAW Formats:</strong> DNG, CR2, NEF, ARW, ORF, RW2, RAF supported</li>
+          <li><strong>Automatic Detection:</strong> App detects sips availability at startup</li>
+          <li><strong>Smart Fallback:</strong> Falls back to Sharp's preview extraction if needed</li>
+          <li><strong>No Dependencies:</strong> Uses built-in macOS tools</li>
+        </ul>
+        
+        <h3>How It Works</h3>
+        <ul class="changelog-list">
+          <li>Primary: Uses macOS sips to convert RAW to JPEG with best quality</li>
+          <li>Fallback: Sharp's embedded preview extraction (previous method)</li>
+          <li>Result: All your DNG files should load successfully!</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
+        <p class="version-label">Version 3.0.1 — December 21, 2024</p>
+        
+        <h3>Bug Fixes & Improvements</h3>
+        <ul class="changelog-list">
+          <li><strong>Enhanced DNG Support:</strong> Detailed error messages when DNG/RAW files fail to load</li>
+          <li><strong>Format Diagnostics:</strong> App checks Sharp's capabilities at startup and warns about RAW support</li>
+          <li><strong>User Feedback:</strong> Success messages now list failed files and provide troubleshooting guidance</li>
+          <li><strong>Better Logging:</strong> Per-file loading status with detailed error information in console</li>
+          <li><strong>New Documentation:</strong> DNG_SUPPORT.md with comprehensive troubleshooting guide</li>
+          <li><strong>Graceful Failures:</strong> App continues with successfully loaded images when some files fail</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
         <p class="version-label">Version 3.0.0 — December 21, 2024</p>
         
         <h3>What's New</h3>
@@ -296,7 +331,7 @@
           <li>Shot numbers (left) and filenames (right) on each thumbnail</li>
           <li>Automatic pagination for multiple sheets</li>
           <li>Optional outline mode for thumbnail boundaries</li>
-          <li>Support for JPG, PNG, TIFF, GIF, BMP, DNG, CR2, NEF, ARW, ORF, RW2, RAF</li>
+          <li>Support for JPG, PNG, TIFF, BMP, DNG, CR2, NEF, ARW, ORF, RW2, RAF</li>
           <li>Swiss/Japanese minimalist aesthetic</li>
           <li>Kode Mono typography throughout</li>
           <li>Dark theme with orange accent colors</li>

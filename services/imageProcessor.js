@@ -1,10 +1,29 @@
 const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
+const { processRawWithSips, extractDngPreview, isSipsAvailable, isExiftoolAvailable } = require('./rawProcessor');
+
+// Check if sips and exiftool are available at module load
+let sipsAvailable = false;
+let exiftoolAvailable = false;
+(async () => {
+  exiftoolAvailable = await isExiftoolAvailable();
+  sipsAvailable = await isSipsAvailable();
+  
+  if (exiftoolAvailable) {
+    console.log('✓ exiftool detected - Will extract embedded DNG previews (respects color profiles)');
+  }
+  if (sipsAvailable) {
+    console.log('✓ macOS sips detected - RAW/DNG processing enabled');
+  }
+  if (!exiftoolAvailable && !sipsAvailable) {
+    console.log('ℹ️  Neither exiftool nor sips available - will attempt Sharp\'s embedded preview extraction');
+  }
+})();
 
 // Supported image formats
 const SUPPORTED_FORMATS = [
-  '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dng',
+  '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.bmp', '.dng',
   '.cr2', '.nef', '.arw', '.orf', '.rw2', '.raf'
 ];
 
@@ -41,25 +60,85 @@ async function scanFolder(folderPath) {
  * @returns {Promise<Buffer>} Image buffer
  */
 async function loadImage(imagePath) {
+  const ext = path.extname(imagePath).toLowerCase();
+  const filename = path.basename(imagePath);
+  
   try {
-    const ext = path.extname(imagePath).toLowerCase();
-    
-    // For RAW/DNG files, Sharp can extract embedded preview
+    // For RAW/DNG files, try multiple methods in order of preference
     if (['.dng', '.cr2', '.nef', '.arw', '.orf', '.rw2', '.raf'].includes(ext)) {
-      // Sharp will extract the embedded JPEG preview from RAW files
-      const buffer = await sharp(imagePath)
-        .rotate() // Auto-rotate based on EXIF
-        .toBuffer();
-      return buffer;
+      console.log(`Loading RAW file: ${filename}`);
+      
+      // Try exiftool first (extracts embedded preview with color profile intact)
+      // This is the best method for DNGs with applied color profiles (e.g., B&W)
+      if (exiftoolAvailable) {
+        const previewBuffer = await extractDngPreview(imagePath);
+        if (previewBuffer) {
+          // Process the preview JPEG with Sharp (for rotation, etc.)
+          const buffer = await sharp(previewBuffer)
+            .rotate() // Auto-rotate based on EXIF
+            .toBuffer();
+          console.log(`  ✓ Using embedded preview (respects color profile)`);
+          return buffer;
+        }
+        
+        console.log(`  ℹ️  No embedded preview, falling back to sips...`);
+      }
+      
+      // Fallback: Try sips (macOS native RAW processor)
+      // Note: sips may not respect applied color profiles
+      if (sipsAvailable) {
+        const sipsBuffer = await processRawWithSips(imagePath);
+        if (sipsBuffer) {
+          // Process the converted JPEG with Sharp (for rotation, etc.)
+          const buffer = await sharp(sipsBuffer)
+            .rotate() // Auto-rotate based on EXIF
+            .toBuffer();
+          return buffer;
+        }
+        
+        console.log(`  ℹ️  sips failed, trying Sharp's embedded preview extraction...`);
+      }
+      
+      // Last resort: Try Sharp's embedded preview extraction
+      try {
+        const image = sharp(imagePath);
+        
+        // Get metadata first to verify the file can be read
+        const metadata = await image.metadata();
+        console.log(`  ✓ RAW metadata: ${metadata.width}x${metadata.height}, format: ${metadata.format}`);
+        
+        // Now process the image
+        const buffer = await sharp(imagePath)
+          .rotate() // Auto-rotate based on EXIF
+          .jpeg() // Convert to JPEG format for processing
+          .toBuffer();
+        
+        console.log(`  ✓ Successfully loaded ${filename} (Sharp preview extraction)`);
+        return buffer;
+      } catch (rawError) {
+        console.error(`  ✗ RAW processing failed for ${filename}:`);
+        console.error(`    Error: ${rawError.message}`);
+        console.error(`    This may indicate:`);
+        console.error(`    - The DNG file doesn't have an embedded preview`);
+        console.error(`    - The file may be corrupted`);
+        console.error(`    - Unsupported RAW format variation`);
+        console.error(`    - Try installing exiftool: brew install exiftool`);
+        
+        // Return null to skip this image
+        return null;
+      }
     }
     
     // For standard formats, just read with sharp
     const buffer = await sharp(imagePath)
       .rotate() // Auto-rotate based on EXIF
       .toBuffer();
+    
     return buffer;
   } catch (error) {
-    console.error(`Error loading image ${imagePath}:`, error.message);
+    console.error(`Error loading image ${filename}:`, error.message);
+    console.error(`  File: ${imagePath}`);
+    console.error(`  Error type: ${error.constructor.name}`);
     // Return null for failed images so we can skip them
     return null;
   }
@@ -132,13 +211,17 @@ async function resizeThumbnail(imageBuffer, targetWidth, targetHeight, aspectRat
  * Load and process all images with progress callback
  * @param {string[]} imagePaths - Array of image paths
  * @param {Function} progressCallback - Callback function for progress updates
- * @returns {Promise<Array>} Array of processed image objects
+ * @returns {Promise<Object>} Object with processed images array and failure stats
  */
 async function loadAndProcessImages(imagePaths, progressCallback) {
   const processedImages = [];
+  const failedImages = [];
+  
+  console.log(`\n📸 Loading ${imagePaths.length} images...`);
   
   for (let i = 0; i < imagePaths.length; i++) {
     const imagePath = imagePaths[i];
+    const filename = path.basename(imagePath);
     
     if (progressCallback) {
       progressCallback({ current: i + 1, total: imagePaths.length });
@@ -150,17 +233,33 @@ async function loadAndProcessImages(imagePaths, progressCallback) {
       if (buffer) {
         processedImages.push({
           path: imagePath,
-          filename: path.basename(imagePath),
+          filename: filename,
           buffer: buffer
         });
+      } else {
+        // loadImage returned null (failed)
+        failedImages.push(filename);
+        console.warn(`⚠️  Skipped: ${filename} (failed to load)`);
       }
     } catch (error) {
-      console.error(`Skipping image ${imagePath}:`, error.message);
+      failedImages.push(filename);
+      console.error(`⚠️  Skipped: ${filename} (${error.message})`);
       // Continue with next image
     }
   }
   
-  return processedImages;
+  // Summary
+  console.log(`\n✅ Successfully loaded: ${processedImages.length}/${imagePaths.length} images`);
+  if (failedImages.length > 0) {
+    console.log(`❌ Failed to load: ${failedImages.length} images`);
+    console.log(`   Failed files: ${failedImages.join(', ')}`);
+  }
+  
+  return {
+    images: processedImages,
+    failedCount: failedImages.length,
+    failedFiles: failedImages
+  };
 }
 
 module.exports = {

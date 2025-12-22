@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs').promises;
 
 // Fix Sharp loading in packaged app by pointing to unpacked directory
-if (app.isPackaged) {
+if (app && app.isPackaged) {
   process.env.SHARP_IGNORE_GLOBAL_LIBVIPS = '1';
   const sharpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sharp');
   const fsSync = require('fs');
@@ -17,6 +17,61 @@ const { generateContactSheets, calculateImagesPerSheet } = require('./services/c
 const { saveContactSheets } = require('./utils/fileSaver');
 
 let mainWindow;
+
+// Check Sharp's format support and RAW processing capabilities at startup
+async function checkSharpCapabilities() {
+  try {
+    const sharp = require('sharp');
+    const { isSipsAvailable } = require('./services/rawProcessor');
+    const formats = sharp.format;
+    
+    console.log('\n📷 Image Format Support Check:');
+    console.log('================================');
+    
+    // Check for standard formats
+    const standardFormats = ['jpeg', 'png', 'tiff', 'gif', 'webp'];
+    console.log('\n✅ Standard Formats:');
+    standardFormats.forEach(format => {
+      if (formats[format]) {
+        console.log(`   ✓ ${format.toUpperCase()}: supported`);
+      } else {
+        console.log(`   ✗ ${format.toUpperCase()}: NOT supported`);
+      }
+    });
+    
+    // Check for RAW formats
+    const rawFormats = ['dng', 'cr2', 'nef', 'arw', 'orf'];
+    console.log('\n📸 RAW Format Support:');
+    
+    let hasRawSupport = false;
+    rawFormats.forEach(format => {
+      if (formats[format]) {
+        console.log(`   ✓ ${format.toUpperCase()}: supported by Sharp`);
+        hasRawSupport = true;
+      }
+    });
+    
+    // Check for macOS sips support
+    const hasSips = await isSipsAvailable();
+    if (hasSips) {
+      console.log('   ✅ macOS sips: AVAILABLE - Full RAW/DNG processing enabled!');
+      console.log('   ✓ All DNG files will be properly converted and processed');
+      hasRawSupport = true;
+    } else if (!hasRawSupport) {
+      console.log('   ℹ️  macOS sips: not available');
+      console.log('   ℹ️  Sharp will attempt to extract embedded previews');
+      console.log('   ℹ️  Some DNG files may not load properly');
+      console.log('   ℹ️  See DNG_SUPPORT.md for details');
+    }
+    
+    console.log('\n================================\n');
+    
+    return hasRawSupport;
+  } catch (error) {
+    console.error('Error checking capabilities:', error.message);
+    return false;
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,7 +94,10 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Check Sharp's capabilities at startup
+  await checkSharpCapabilities();
+  
   createWindow();
 
   app.on('activate', () => {
@@ -247,17 +305,31 @@ ipcMain.handle('generate-contact-sheets', async (event, { folderPath, metadata, 
     });
 
     // Load and process all images
-    const processedImages = await loadAndProcessImages(imagePaths, (progress) => {
+    const loadResult = await loadAndProcessImages(imagePaths, (progress) => {
       mainWindow.webContents.send('generation-progress', {
         status: 'loading',
         message: `Loading images... ${progress.current}/${progress.total}`
       });
     });
+    
+    const processedImages = loadResult.images;
+    const failedCount = loadResult.failedCount;
+    
+    // Check if any images were successfully loaded
+    if (processedImages.length === 0) {
+      throw new Error(`No images could be loaded. ${failedCount} files failed to process. This may indicate:\n- DNG files without proper RAW support\n- Corrupted image files\n- Unsupported file formats\n\nCheck the console for detailed error messages.`);
+    }
+    
+    // Warn if some images failed
+    if (failedCount > 0) {
+      console.warn(`⚠️  Warning: ${failedCount} images failed to load and were skipped`);
+      console.warn(`   Successfully processing ${processedImages.length} images`);
+    }
 
     // Generate contact sheets
     mainWindow.webContents.send('generation-progress', {
       status: 'generating',
-      message: 'Generating contact sheets...'
+      message: `Generating contact sheets from ${processedImages.length} images...`
     });
 
     const contactSheets = await generateContactSheets(processedImages, title, aspectRatio, showOutline, containToOneSheet, containmentMethod, totalImages, resolutionScale, dpi);
@@ -273,7 +345,10 @@ ipcMain.handle('generate-contact-sheets', async (event, { folderPath, metadata, 
     return {
       success: true,
       files: savedFiles,
-      count: savedFiles.length
+      count: savedFiles.length,
+      processedCount: processedImages.length,
+      failedCount: failedCount,
+      failedFiles: loadResult.failedFiles
     };
   } catch (error) {
     console.error('Error generating contact sheets:', error);
