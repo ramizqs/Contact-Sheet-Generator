@@ -147,6 +147,7 @@ async function handleContainToOneSheetChange() {
   // Update sheet count when "Contain to one sheet" is toggled
   if (selectedFolder && imageCount > 0) {
     await updateSheetCount();
+    updateTitlePreview(); // Update title to show/hide pagination
   }
 }
 
@@ -205,10 +206,12 @@ function updateTitlePreview() {
   if (titleParts.length > 0) {
     titleText = titleParts.join(' - ');
     
-    // Add pagination if multiple sheets
-    const sheetCount = Math.ceil(imageCount / 42);
-    if (sheetCount > 1) {
-      titleText += ` (1/${sheetCount})`;
+    // Add pagination if multiple sheets (but not when "contain to one sheet" is enabled)
+    if (!containToOneSheetCheckbox.checked) {
+      const sheetCount = parseInt(sheetCountEl.textContent, 10) || 1;
+      if (sheetCount > 1) {
+        titleText += ` (1/${sheetCount})`;
+      }
     }
     
     titlePreview.textContent = titleText.toUpperCase();
