@@ -11,7 +11,7 @@
     <header>
       <h1>Contact Sheet Generator</h1>
       <div class="version-info">
-        <span class="version-text">v 3.1.0</span>
+        <span class="version-text">v 3.2.0</span>
         <button id="infoBtn" class="info-icon" aria-label="Show changelog">ⓘ</button>
       </div>
     </header>
@@ -212,6 +212,19 @@
         <button id="closeModal" class="modal-close">×</button>
       </div>
       <div class="modal-body">
+        <p class="version-label">Version 3.2.0 — December 21, 2024</p>
+        
+        <h3>🎨 Enhanced: Color Profile Preservation</h3>
+        <ul class="changelog-list">
+          <li><strong>✅ NEW: exiftool integration!</strong> Extracts embedded DNG previews with color profiles intact</li>
+          <li><strong>Preserves B&W rendering:</strong> DNGs with applied color profiles (B&W, film sims) render correctly</li>
+          <li><strong>Three-tier processing:</strong> exiftool (best) → sips (good) → Sharp (fallback)</li>
+          <li><strong>Faster & better:</strong> Embedded previews are quicker and respect camera settings</li>
+          <li><strong>Optional:</strong> Install with <code>brew install exiftool</code> for best results</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
         <p class="version-label">Version 3.1.0 — December 21, 2024</p>
         
         <h3>🎉 Major Feature: Full RAW/DNG Support</h3>

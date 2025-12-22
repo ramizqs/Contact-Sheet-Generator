@@ -1,5 +1,45 @@
 # Changelog
 
+## Version 3.2.0 (December 21, 2024)
+
+### 🎨 Enhanced RAW Support: Color Profile Preservation
+
+#### exiftool Integration for DNG Preview Extraction
+- **✅ NEW: Color profile preservation!** Using exiftool to extract embedded DNG previews
+- **Respects applied color profiles**: Black & white rendering, film simulations, etc.
+- **Primary processing method**: exiftool extracts preview → Sharp processes
+- **Three-tier system**: exiftool (best) → sips (good) → Sharp (fallback)
+
+#### Why This Matters
+- **DNGs with color profiles** (e.g., B&W conversion in Leica cameras) now render correctly
+- **Embedded previews** preserve the camera's/software's color rendering
+- **Better than sips**: sips re-processes RAW data, may ignore applied profiles
+- **Faster processing**: Extracting preview is quicker than full RAW conversion
+
+#### Processing Priority Order
+1. **exiftool** - Extracts embedded JPEG preview (preserves color profile) ⭐ **BEST**
+2. **sips** - Full RAW conversion (may lose color profile)
+3. **Sharp** - Embedded preview extraction (limited support)
+
+#### Technical Details
+- `extractDngPreview()`: Uses exiftool to extract `-PreviewImage`
+- 50MB buffer for large previews
+- Automatic detection of exiftool availability
+- Falls back gracefully if exiftool not installed
+
+#### Installation Note
+For full color profile support:
+```bash
+brew install exiftool
+```
+
+If exiftool not installed, app falls back to sips/Sharp methods.
+
+### Other Changes
+- **Removed GIF support**: GIF removed from supported formats list
+- **Updated format check**: Now detects both exiftool and sips availability
+- **Enhanced logging**: Shows which method successfully processed each file
+
 ## Version 3.1.0 (December 21, 2024)
 
 ### 🎉 Major Feature: FULL RAW/DNG SUPPORT
