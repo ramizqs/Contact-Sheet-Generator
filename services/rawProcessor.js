@@ -6,6 +6,101 @@ const os = require('os');
 
 const execAsync = promisify(exec);
 
+// Common installation paths for command-line tools
+// macOS apps launched from Finder have very limited PATH
+const COMMON_PATHS = [
+  '/usr/local/bin',
+  '/opt/homebrew/bin',
+  '/opt/local/bin',
+  '/usr/bin',
+  '/bin'
+];
+
+/**
+ * Find the full path to a command by searching common locations
+ * @param {string} command - Command name to find
+ * @returns {Promise<string|null>} Full path to command or null if not found
+ */
+async function findCommand(command) {
+  const fsSync = require('fs');
+  
+  // FIRST: Check if bundled with the app (for exiftool)
+  if (command === 'exiftool') {
+    try {
+      const { app } = require('electron');
+      let bundledPath;
+      
+      if (app.isPackaged) {
+        // In packaged app, check Resources
+        bundledPath = path.join(process.resourcesPath, 'app', 'assets', 'exiftool');
+      } else {
+        // In dev mode, check assets
+        bundledPath = path.join(__dirname, '..', 'assets', 'exiftool');
+      }
+      
+      if (fsSync.existsSync(bundledPath)) {
+        // Verify it's executable
+        try {
+          await fsSync.promises.access(bundledPath, fsSync.constants.X_OK);
+          console.log(`✓ Using bundled ${command} at: ${bundledPath}`);
+          console.log(`   Version: 12.70 (bundled with app)`);
+          return bundledPath;
+        } catch (error) {
+          console.log(`  Bundled exiftool found but not executable, trying system version...`);
+        }
+      }
+    } catch (error) {
+      // Electron app not available or other error, fall through to system search
+    }
+  }
+  
+  // SECOND: Try which (will work if PATH is set correctly)
+  try {
+    const { stdout } = await execAsync(`which ${command}`);
+    const commandPath = stdout.trim();
+    if (commandPath) {
+      console.log(`✓ Found system ${command} at: ${commandPath}`);
+      return commandPath;
+    }
+  } catch (error) {
+    // which failed, fall through to manual search
+  }
+  
+  // THIRD: Manually check common paths
+  for (const dir of COMMON_PATHS) {
+    const fullPath = path.join(dir, command);
+    try {
+      if (fsSync.existsSync(fullPath)) {
+        // Verify it's executable
+        await fsSync.promises.access(fullPath, fsSync.constants.X_OK);
+        console.log(`✓ Found ${command} at: ${fullPath}`);
+        return fullPath;
+      }
+    } catch (error) {
+      // Not accessible, continue searching
+    }
+  }
+  
+  return null;
+}
+
+// Cache the command paths
+let sipsPath = null;
+let exiftoolPath = null;
+
+// Find commands at module load
+(async () => {
+  sipsPath = await findCommand('sips');
+  exiftoolPath = await findCommand('exiftool');
+  
+  if (sipsPath) {
+    console.log(`✓ sips available at: ${sipsPath}`);
+  }
+  if (exiftoolPath) {
+    console.log(`✓ exiftool available at: ${exiftoolPath}`);
+  }
+})();
+
 /**
  * Process RAW/DNG file using macOS sips command
  * Converts RAW to JPEG in a temporary location, then returns the buffer
@@ -14,6 +109,16 @@ const execAsync = promisify(exec);
  */
 async function processRawWithSips(rawFilePath) {
   const filename = path.basename(rawFilePath);
+  
+  // Wait for sips path to be resolved if still initializing
+  if (sipsPath === null) {
+    sipsPath = await findCommand('sips');
+  }
+  
+  if (!sipsPath) {
+    console.error(`  ✗ sips not available, cannot convert ${filename}`);
+    return null;
+  }
   
   try {
     // Create temporary output path
@@ -26,7 +131,7 @@ async function processRawWithSips(rawFilePath) {
     // -s format jpeg: Set output format to JPEG
     // -s formatOptions best: Use best quality
     // --out: Specify output path
-    const command = `sips -s format jpeg -s formatOptions best "${rawFilePath}" --out "${tempOutputPath}"`;
+    const command = `"${sipsPath}" -s format jpeg -s formatOptions best "${rawFilePath}" --out "${tempOutputPath}"`;
     
     const { stdout, stderr } = await execAsync(command, {
       timeout: 30000 // 30 second timeout per file
@@ -59,12 +164,10 @@ async function processRawWithSips(rawFilePath) {
  * @returns {Promise<boolean>} True if sips is available
  */
 async function isSipsAvailable() {
-  try {
-    await execAsync('which sips');
-    return true;
-  } catch (error) {
-    return false;
+  if (sipsPath === null) {
+    sipsPath = await findCommand('sips');
   }
+  return sipsPath !== null;
 }
 
 /**
@@ -97,13 +200,23 @@ async function isSipsFormatSupported(extension) {
 async function extractDngPreview(rawFilePath) {
   const filename = path.basename(rawFilePath);
   
+  // Wait for exiftool path to be resolved if still initializing
+  if (exiftoolPath === null) {
+    exiftoolPath = await findCommand('exiftool');
+  }
+  
+  if (!exiftoolPath) {
+    console.error(`  ✗ exiftool not available, cannot extract preview from ${filename}`);
+    return null;
+  }
+  
   try {
     console.log(`  🔍 Extracting embedded preview: ${filename}`);
     
     // Use exiftool to extract the embedded preview
     // -b: Binary output
     // -PreviewImage: Extract the preview image (respects color profiles)
-    const command = `exiftool -b -PreviewImage "${rawFilePath}"`;
+    const command = `"${exiftoolPath}" -b -PreviewImage "${rawFilePath}"`;
     
     const { stdout } = await execAsync(command, {
       timeout: 30000,
@@ -136,12 +249,10 @@ async function extractDngPreview(rawFilePath) {
  * @returns {Promise<boolean>} True if exiftool is available
  */
 async function isExiftoolAvailable() {
-  try {
-    await execAsync('which exiftool');
-    return true;
-  } catch (error) {
-    return false;
+  if (exiftoolPath === null) {
+    exiftoolPath = await findCommand('exiftool');
   }
+  return exiftoolPath !== null;
 }
 
 module.exports = {
@@ -149,6 +260,7 @@ module.exports = {
   extractDngPreview,
   isSipsAvailable,
   isExiftoolAvailable,
-  isSipsFormatSupported
+  isSipsFormatSupported,
+  findCommand
 };
 
