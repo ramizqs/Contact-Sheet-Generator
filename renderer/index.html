@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Sheet Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Contact Sheet Generator</h1>
+      <div class="version-info">
+        <span class="version-text">v 3.0.0</span>
+        <button id="infoBtn" class="info-icon" aria-label="Show changelog">ⓘ</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Folder Selection -->
+      <section class="card">
+        <h2>01 / Folder</h2>
+        <div class="folder-selection">
+          <button id="selectFolderBtn" class="btn btn-primary">
+            <span class="icon">▶</span>
+            Select Folder
+          </button>
+          <div id="folderInfo" class="folder-info">
+            <div>
+              <strong>Path</strong>
+              <span id="folderPath"></span>
+            </div>
+            <div>
+              <strong>Images</strong>
+              <span id="imageCount">0</span>
+            </div>
+            <div>
+              <strong>Sheets</strong>
+              <span id="sheetCount">0</span>
+            </div>
+          </div>
+          <div class="aspect-ratio-controls">
+            <label class="checkbox-label">
+              <input type="checkbox" id="autoDetectAspectRatioCheckbox" checked>
+              <span>Detect Image Aspect Ratio</span>
+            </label>
+            <div class="aspect-ratio-picker">
+              <label for="aspectRatioSelect">Image Aspect Ratio</label>
+              <select id="aspectRatioSelect" class="output-select">
+                <option value="3:2">3:2 (Landscape)</option>
+                <option value="4:3">4:3 (Landscape)</option>
+                <option value="16:9">16:9 (Widescreen)</option>
+                <option value="1:1">1:1 (Square)</option>
+                <option value="2:3">2:3 (Portrait)</option>
+                <option value="3:4">3:4 (Portrait)</option>
+                <option value="9:16">9:16 (Portrait)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Metadata Input -->
+      <section class="card">
+        <h2>02 / Metadata</h2>
+        <div class="metadata-grid">
+          <div class="metadata-field">
+            <label for="rollNumberInput">Roll #</label>
+            <input 
+              type="text" 
+              id="rollNumberInput" 
+              class="metadata-input" 
+              placeholder="0000"
+            />
+          </div>
+          <div class="metadata-field">
+            <label for="filmStockInput">Film Stock</label>
+            <input 
+              type="text" 
+              id="filmStockInput" 
+              class="metadata-input" 
+              placeholder="Portra"
+            />
+          </div>
+          <div class="metadata-field">
+            <label for="isoInput">ISO</label>
+            <input 
+              type="text" 
+              id="isoInput" 
+              class="metadata-input" 
+              placeholder="400"
+            />
+          </div>
+          <div class="metadata-field">
+            <label for="cameraInput">Camera</label>
+            <input 
+              type="text" 
+              id="cameraInput" 
+              class="metadata-input" 
+              placeholder="Leica MP"
+            />
+          </div>
+          <div class="metadata-field">
+            <label for="notesInput">Notes</label>
+            <input 
+              type="text" 
+              id="notesInput" 
+              class="metadata-input" 
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div class="title-preview">
+          <span class="preview-label">Title Preview</span>
+          <span id="titlePreview" class="preview-text">—</span>
+        </div>
+      </section>
+
+      <!-- Generate -->
+      <section class="card">
+        <h2>03 / Generate</h2>
+        <div class="generate-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="openFolderCheckbox" checked>
+            <span>Open when complete</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showOutlineCheckbox" checked>
+            <span>Show outline</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="containToOneSheetCheckbox" checked>
+            <span>Contain to one sheet</span>
+          </label>
+        </div>
+        <div class="output-settings">
+          <div class="output-setting">
+            <label for="resolutionSelect">Resolution</label>
+            <select id="resolutionSelect" class="output-select">
+              <option value="1">2K (2048px)</option>
+              <option value="2" selected>4K (4096px)</option>
+              <option value="3">6K (6144px)</option>
+              <option value="4">8K (8192px)</option>
+            </select>
+          </div>
+          <div class="output-setting">
+            <label for="dpiSelect">DPI</label>
+            <select id="dpiSelect" class="output-select">
+              <option value="72">72 DPI (Screen)</option>
+              <option value="150">150 DPI (Web)</option>
+              <option value="300" selected>300 DPI (Print)</option>
+              <option value="600">600 DPI (High Print)</option>
+            </select>
+          </div>
+          <div class="output-setting">
+            <label for="containmentMethodSelect">Containment Method</label>
+            <select id="containmentMethodSelect" class="output-select">
+              <option value="resize-thumbnail">Resize Thumbnail</option>
+              <option value="resize-sheet-w">Resize Sheet - W</option>
+              <option value="resize-sheet-h">Resize Sheet - H</option>
+            </select>
+          </div>
+        </div>
+        <button id="generateBtn" class="btn btn-generate" disabled>
+          Generate
+          <span class="icon">▶</span>
+        </button>
+        
+        <!-- Progress -->
+        <div id="progressContainer" class="progress-container hidden">
+          <div class="progress-bar">
+            <div id="progressBar" class="progress-fill"></div>
+          </div>
+          <p id="progressMessage" class="progress-message">Processing...</p>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section id="resultsSection" class="card results hidden">
+        <h2>Complete</h2>
+        <p id="resultsMessage" class="results-message"></p>
+        <div class="results-actions">
+          <button id="openFolderBtn" class="btn btn-secondary">
+            <span class="icon">↑</span>
+            Open
+          </button>
+          <button id="generateAnotherBtn" class="btn btn-secondary">
+            <span class="icon">↻</span>
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <!-- Error -->
+      <section id="errorSection" class="card error hidden">
+        <h2>Error</h2>
+        <p id="errorMessage" class="error-message"></p>
+      </section>
+    </main>
+
+    <footer>
+      <span class="footer-left">Compatible Filetypes: JPG · PNG · TIFF · GIF · BMP · DNG</span>
+      <span class="footer-right">Designed & Built By Ramiz Sheikh</span>
+    </footer>
+  </div>
+
+  <!-- Changelog Modal -->
+  <div id="changelogModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Contact Sheet Generator</h2>
+        <button id="closeModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="version-label">Version 3.0.0 — December 21, 2024</p>
+        
+        <h3>What's New</h3>
+        <ul class="changelog-list">
+          <li><strong>7 Aspect Ratios:</strong> Support for 3:2, 4:3, 16:9, 1:1, 2:3, 3:4, and 9:16 formats</li>
+          <li><strong>Auto-Detect Aspect Ratio:</strong> Automatically analyze and select the best ratio for your images</li>
+          <li><strong>Single-Sheet Mode:</strong> Fit all images on one sheet with three containment methods</li>
+          <li><strong>Resize Thumbnail:</strong> Shrink thumbnails to fit all images on fixed canvas</li>
+          <li><strong>Resize Sheet (Width/Height):</strong> Expand canvas width or height while maintaining thumbnail size</li>
+          <li><strong>Dynamic Grid Optimization:</strong> Smart column/row calculation based on aspect ratio and image count</li>
+          <li><strong>Distributed Spacing:</strong> Evenly spaced layouts with no wasted vertical space</li>
+        </ul>
+        
+        <h3>Technical Improvements</h3>
+        <ul class="changelog-list">
+          <li>Dynamic grid calculation engine with 4-7 column layouts based on aspect ratio</li>
+          <li>Three containment modes: resize-thumbnail, resize-sheet-w, resize-sheet-h</li>
+          <li>Smart thumbnail maximization algorithm for single-sheet mode</li>
+          <li>Aspect ratio parsing and decimal conversion system</li>
+          <li>Distributed vertical spacing for balanced layouts</li>
+          <li>Enhanced letterboxing/pillarboxing for all 7 aspect ratios</li>
+          <li>Grid parameters calculated once per sheet for better performance</li>
+          <li>Full backward compatibility with v2.0.0 default settings</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
+        <p class="version-label">Version 2.0.0 — December 21, 2024</p>
+        
+        <h3>Major New Features</h3>
+        <ul class="changelog-list">
+          <li><strong>Resolution Settings:</strong> Choose from 2K, 4K, 6K, or 8K output</li>
+          <li><strong>Scalable Architecture:</strong> All dimensions scale proportionally with resolution</li>
+          <li><strong>Professional Output:</strong> Generate ultra-high-resolution contact sheets for printing</li>
+          <li><strong>Embedded Font (UI):</strong> Kode Mono now displays in the application interface</li>
+        </ul>
+        
+        <h3>Improvements</h3>
+        <ul class="changelog-list">
+          <li>Fixed font rendering in both UI and generated images</li>
+          <li>Font files properly unpacked in built application</li>
+          <li>Enhanced font path detection for packaged apps</li>
+          <li>Complete font embedding solution (no system installation needed)</li>
+        </ul>
+        
+        <h3>Known Issues</h3>
+        <ul class="changelog-list">
+          <li>Not tested with folders containing multiple image sizes</li>
+          <li>Not an exhaustive list of image filetypes tested</li>
+          <li>Different image aspect ratios / film formats still to come</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
+        <p class="version-label">Version 1.1.0 — December 21, 2024</p>
+        
+        <h3>What's New</h3>
+        <ul class="changelog-list">
+          <li><strong>Embedded Font:</strong> Kode Mono font now built-in for generated images</li>
+          <li><strong>New Icon:</strong> Updated app icon with "C" letter design</li>
+          <li><strong>Canvas Rendering:</strong> Improved text rendering using node-canvas</li>
+          <li><strong>Zero Setup:</strong> Works immediately after installation</li>
+        </ul>
+        
+        <h3>Technical Improvements</h3>
+        <ul class="changelog-list">
+          <li>Replaced SVG text rendering with canvas-based rendering</li>
+          <li>Font loaded from app bundle at runtime</li>
+          <li>Better typography consistency across all systems</li>
+          <li>Universal binary with proper native module rebuilding</li>
+        </ul>
+        
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+        
+        <p class="version-label">Version 1.0.0 — December 20, 2024</p>
+        
+        <h3>Initial Release</h3>
+        <ul class="changelog-list">
+          <li>Generate 2048×1782px contact sheets (6×7 grid, 42 images)</li>
+          <li>5 metadata fields: Roll #, Film Stock, ISO, Camera, Notes</li>
+          <li>Fixed 3:2 aspect ratio with letterboxing/pillarboxing</li>
+          <li>Shot numbers (left) and filenames (right) on each thumbnail</li>
+          <li>Automatic pagination for multiple sheets</li>
+          <li>Optional outline mode for thumbnail boundaries</li>
+          <li>Support for JPG, PNG, TIFF, GIF, BMP, DNG, CR2, NEF, ARW, ORF, RW2, RAF</li>
+          <li>Swiss/Japanese minimalist aesthetic</li>
+          <li>Kode Mono typography throughout</li>
+          <li>Dark theme with orange accent colors</li>
+          <li>Built with Electron for macOS</li>
+          <li>Sharp image processing with RAW file support</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <p>Designed & Built By Ramiz Sheikh</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
