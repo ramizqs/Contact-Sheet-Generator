@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   selectFolder: () => ipcRenderer.invoke('select-folder'),
+  scanFolder: (folderPath) => ipcRenderer.invoke('scan-folder', folderPath),
   detectAspectRatio: (folderPath) => ipcRenderer.invoke('detect-aspect-ratio', folderPath),
   calculateImagesPerSheet: (options) => ipcRenderer.invoke('calculate-images-per-sheet', options),
   generateContactSheets: (options) => ipcRenderer.invoke('generate-contact-sheets', options),
@@ -13,4 +14,3 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('generation-progress', (event, data) => callback(data));
   }
 });
-

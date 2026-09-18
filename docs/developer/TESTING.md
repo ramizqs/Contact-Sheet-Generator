@@ -16,6 +16,8 @@
 
 ### 3. Folder Selection Tests
 - [ ] "Select Folder" button opens folder picker dialog
+- [ ] Dropping a folder over the "01 / Folder" card selects and scans it
+- [ ] Dropping a file or unsupported item shows an error without changing the selection
 - [ ] Selecting a folder displays the folder path
 - [ ] Image count is displayed correctly
 - [ ] Sheet count is calculated correctly (count / 42, rounded up)
@@ -82,6 +84,8 @@ Test with folders containing different formats:
 - [ ] Square images
 - [ ] Panoramic images
 - [ ] Images with EXIF rotation data
+- [ ] Portrait rotation checkbox rotates portrait images only in generated output
+- [ ] Portrait rotation leaves source files unchanged
 - [ ] Filenames with special characters
 - [ ] Filenames with unicode characters
 - [ ] Very long filenames (>100 characters)
@@ -116,4 +120,3 @@ Date: ___________
 Tested by: ___________
 
 Notes:
-

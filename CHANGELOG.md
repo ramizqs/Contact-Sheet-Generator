@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 3.3.0 (September 18, 2026)
+
+### New Folder Workflow
+- **Drag and drop folders** directly onto the `01 / Folder` section to select and scan them.
+- **Stylized drop zone** dims the folder controls and displays a dashed outline with a clear drop prompt while dragging.
+
+### Auto-Rotate Images
+- Added an optional **Auto-Rotate Images** setting for portrait images.
+- Portraits are rotated to landscape only in the generated contact sheet; original files are never modified.
+
 ## Version 3.2.0 (December 21, 2024)
 
 ### 🎨 Enhanced RAW Support: Color Profile Preservation
@@ -338,4 +348,3 @@ If exiftool not installed, app falls back to sips/Sharp methods.
 - Automatic multi-sheet generation for >42 images
 - Modern dark-themed UI
 - Progress indicators and error handling
-

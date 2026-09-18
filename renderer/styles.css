@@ -114,6 +114,39 @@ main {
   margin-bottom: 12px;
 }
 
+.folder-drop-zone {
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.folder-drop-zone.drag-over {
+  border: 1px dashed var(--orange-primary);
+}
+
+.folder-drop-zone.drag-over::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.78);
+  pointer-events: none;
+}
+
+.folder-drop-zone.drag-over::after {
+  content: 'DROP AN IMAGE FOLDER HERE';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: 'Kode Mono', 'Menlo', 'Monaco', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
 .card h2 {
   font-size: 11px;
   font-weight: 400;
@@ -173,6 +206,10 @@ main {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.aspect-ratio-controls .checkbox-label {
+  flex-shrink: 0;
 }
 
 .aspect-ratio-picker {

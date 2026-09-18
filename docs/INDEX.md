@@ -149,7 +149,6 @@ docs/
 
 ---
 
-**Current Version:** 3.2.1
+**Current Version:** 3.3.0
 
 Last updated: December 2025
-

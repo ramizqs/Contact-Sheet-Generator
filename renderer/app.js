@@ -11,6 +11,7 @@ let metadata = {
 
 // DOM Elements
 const selectFolderBtn = document.getElementById('selectFolderBtn');
+const folderDropZone = document.getElementById('folderDropZone');
 const folderInfo = document.getElementById('folderInfo');
 const folderPath = document.getElementById('folderPath');
 const imageCountEl = document.getElementById('imageCount');
@@ -25,6 +26,7 @@ const openFolderCheckbox = document.getElementById('openFolderCheckbox');
 const showOutlineCheckbox = document.getElementById('showOutlineCheckbox');
 const containToOneSheetCheckbox = document.getElementById('containToOneSheetCheckbox');
 const autoDetectAspectRatioCheckbox = document.getElementById('autoDetectAspectRatioCheckbox');
+const rotatePortraitCheckbox = document.getElementById('rotatePortraitCheckbox');
 const resolutionSelect = document.getElementById('resolutionSelect');
 const dpiSelect = document.getElementById('dpiSelect');
 const aspectRatioSelect = document.getElementById('aspectRatioSelect');
@@ -45,6 +47,10 @@ const closeModal = document.getElementById('closeModal');
 
 // Event Listeners
 selectFolderBtn.addEventListener('click', handleFolderSelect);
+folderDropZone.addEventListener('dragenter', handleFolderDragEnter);
+folderDropZone.addEventListener('dragover', handleFolderDragOver);
+folderDropZone.addEventListener('dragleave', handleFolderDragLeave);
+folderDropZone.addEventListener('drop', handleFolderDrop);
 filmStockInput.addEventListener('input', handleMetadataInput);
 rollNumberInput.addEventListener('input', handleMetadataInput);
 isoInput.addEventListener('input', handleMetadataInput);
@@ -74,7 +80,41 @@ window.electronAPI.onProgressUpdate((data) => {
 // Handlers
 async function handleFolderSelect() {
   const result = await window.electronAPI.selectFolder();
-  
+  await applyFolderSelection(result);
+}
+
+async function handleFolderDrop(event) {
+  event.preventDefault();
+  folderDropZone.classList.remove('drag-over');
+
+  const droppedFile = event.dataTransfer.files[0];
+  if (!droppedFile || !droppedFile.path) {
+    showError('Please drop a folder containing supported images.');
+    return;
+  }
+
+  const result = await window.electronAPI.scanFolder(droppedFile.path);
+  await applyFolderSelection(result);
+}
+
+function handleFolderDragEnter(event) {
+  event.preventDefault();
+  folderDropZone.classList.add('drag-over');
+}
+
+function handleFolderDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+  folderDropZone.classList.add('drag-over');
+}
+
+function handleFolderDragLeave(event) {
+  if (!folderDropZone.contains(event.relatedTarget)) {
+    folderDropZone.classList.remove('drag-over');
+  }
+}
+
+async function applyFolderSelection(result) {
   if (result.canceled) {
     return;
   }
@@ -280,7 +320,8 @@ async function handleGenerate() {
       containmentMethod: containmentMethod,
       totalImages: imageCount,
       resolutionScale: resolutionScale,
-      dpi: dpi
+      dpi: dpi,
+      rotatePortrait: rotatePortraitCheckbox.checked
     });
     
     // Hide progress
@@ -377,6 +418,7 @@ function resetForm() {
   isoInput.value = '';
   cameraInput.value = '';
   notesInput.value = '';
+  rotatePortraitCheckbox.checked = false;
   titlePreview.textContent = '—';
   // Don't reset aspect ratio - let user keep their selection
   
@@ -402,4 +444,3 @@ function showError(message) {
   errorMessage.textContent = message;
   errorSection.classList.remove('hidden');
 }
-
