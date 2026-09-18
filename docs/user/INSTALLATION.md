@@ -153,7 +153,6 @@ For more information:
 
 ---
 
-**Current Version:** 3.2.1
+**Current Version:** 3.3.0
 
 Enjoy using Contact Sheet Generator!
-

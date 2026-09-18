@@ -1,12 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fsSync = require('fs');
 const fs = require('fs').promises;
 
 // Fix Sharp loading in packaged app by pointing to unpacked directory
 if (app && app.isPackaged) {
   process.env.SHARP_IGNORE_GLOBAL_LIBVIPS = '1';
   const sharpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sharp');
-  const fsSync = require('fs');
   if (fsSync.existsSync(sharpPath)) {
     process.env.SHARP_PATH = sharpPath;
   }
@@ -92,6 +92,21 @@ function createWindow() {
   
   // Open DevTools in development
   // mainWindow.webContents.openDevTools();
+}
+
+async function getFolderSelection(folderPath) {
+  const stats = await fs.stat(folderPath);
+  if (!stats.isDirectory()) {
+    throw new Error('Please select a folder containing supported images.');
+  }
+
+  const images = await scanFolder(folderPath);
+  return {
+    canceled: false,
+    folderPath,
+    imageCount: images.length,
+    images: images.map(img => path.basename(img))
+  };
 }
 
 app.whenReady().then(async () => {
@@ -253,15 +268,19 @@ ipcMain.handle('select-folder', async () => {
   const folderPath = result.filePaths[0];
   
   try {
-    // Scan folder for images
-    const images = await scanFolder(folderPath);
-    
+    return await getFolderSelection(folderPath);
+  } catch (error) {
     return {
       canceled: false,
-      folderPath,
-      imageCount: images.length,
-      images: images.map(img => path.basename(img))
+      error: error.message
     };
+  }
+});
+
+// Handle a folder path supplied by the renderer's drag-and-drop target
+ipcMain.handle('scan-folder', async (event, folderPath) => {
+  try {
+    return await getFolderSelection(folderPath);
   } catch (error) {
     return {
       canceled: false,
@@ -271,7 +290,7 @@ ipcMain.handle('select-folder', async () => {
 });
 
 // Handle contact sheet generation
-ipcMain.handle('generate-contact-sheets', async (event, { folderPath, metadata, aspectRatio = '3:2', showOutline, containToOneSheet = false, containmentMethod = 'resize-thumbnail', totalImages, resolutionScale = 2, dpi = 300 }) => {
+ipcMain.handle('generate-contact-sheets', async (event, { folderPath, metadata, aspectRatio = '3:2', showOutline, containToOneSheet = false, containmentMethod = 'resize-thumbnail', totalImages, resolutionScale = 2, dpi = 300, rotatePortrait = false }) => {
   try {
     // Scan folder for images
     const imagePaths = await scanFolder(folderPath);
@@ -310,7 +329,7 @@ ipcMain.handle('generate-contact-sheets', async (event, { folderPath, metadata, 
         status: 'loading',
         message: `Loading images... ${progress.current}/${progress.total}`
       });
-    });
+    }, rotatePortrait);
     
     const processedImages = loadResult.images;
     const failedCount = loadResult.failedCount;
@@ -372,4 +391,3 @@ ipcMain.handle('resize-window', async (event, height) => {
     mainWindow.setSize(width, height, true); // animate = true
   }
 });
-

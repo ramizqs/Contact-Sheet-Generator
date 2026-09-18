@@ -11,14 +11,14 @@
     <header>
       <h1>Contact Sheet Generator</h1>
       <div class="version-info">
-        <span class="version-text">v 3.2.1</span>
+        <span class="version-text">v 3.3.0</span>
         <button id="infoBtn" class="info-icon" aria-label="Show changelog">ⓘ</button>
       </div>
     </header>
 
     <main>
       <!-- Folder Selection -->
-      <section class="card">
+      <section id="folderDropZone" class="card folder-drop-zone">
         <h2>01 / Folder</h2>
         <div class="folder-selection">
           <button id="selectFolderBtn" class="btn btn-primary">
@@ -43,6 +43,10 @@
             <label class="checkbox-label">
               <input type="checkbox" id="autoDetectAspectRatioCheckbox" checked>
               <span>Detect Image Aspect Ratio</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="rotatePortraitCheckbox">
+              <span>Auto-Rotate Images</span>
             </label>
             <div class="aspect-ratio-picker">
               <label for="aspectRatioSelect">Image Aspect Ratio</label>
@@ -165,7 +169,7 @@
           Generate
           <span class="icon">▶</span>
         </button>
-        
+
         <!-- Progress -->
         <div id="progressContainer" class="progress-container hidden">
           <div class="progress-bar">
@@ -212,8 +216,19 @@
         <button id="closeModal" class="modal-close">×</button>
       </div>
       <div class="modal-body">
+        <p class="version-label">Version 3.3.0 — September 18, 2026</p>
+
+        <h3>📁 New: Faster Folder Selection</h3>
+        <ul class="changelog-list">
+          <li><strong>Drag and drop folders:</strong> Drop an image folder directly onto the 01 / Folder section</li>
+          <li><strong>Clear drop target:</strong> A dimmed overlay and dashed outline make the active drop zone obvious</li>
+          <li><strong>Auto-Rotate Images:</strong> Rotate portrait images to landscape in the contact sheet without changing source files</li>
+        </ul>
+
+        <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
+
         <p class="version-label">Version 3.2.1 — December 21, 2024</p>
-        
+
         <h3>🎨 Enhanced: Color Profile Preservation</h3>
         <ul class="changelog-list">
           <li><strong>✅ NEW: exiftool integration!</strong> Extracts embedded DNG previews with color profiles intact</li>
@@ -222,11 +237,11 @@
           <li><strong>Faster & better:</strong> Embedded previews are quicker and respect camera settings</li>
           <li><strong>Optional:</strong> Install with <code>brew install exiftool</code> for best results</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 3.1.0 — December 21, 2024</p>
-        
+
         <h3>🎉 Major Feature: Full RAW/DNG Support</h3>
         <ul class="changelog-list">
           <li><strong>✅ FIXED: All DNG files now work!</strong> Using macOS native sips for RAW conversion</li>
@@ -236,18 +251,18 @@
           <li><strong>Smart Fallback:</strong> Falls back to Sharp's preview extraction if needed</li>
           <li><strong>No Dependencies:</strong> Uses built-in macOS tools</li>
         </ul>
-        
+
         <h3>How It Works</h3>
         <ul class="changelog-list">
           <li>Primary: Uses macOS sips to convert RAW to JPEG with best quality</li>
           <li>Fallback: Sharp's embedded preview extraction (previous method)</li>
           <li>Result: All your DNG files should load successfully!</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 3.0.1 — December 21, 2024</p>
-        
+
         <h3>Bug Fixes & Improvements</h3>
         <ul class="changelog-list">
           <li><strong>Enhanced DNG Support:</strong> Detailed error messages when DNG/RAW files fail to load</li>
@@ -257,11 +272,11 @@
           <li><strong>New Documentation:</strong> DNG_SUPPORT.md with comprehensive troubleshooting guide</li>
           <li><strong>Graceful Failures:</strong> App continues with successfully loaded images when some files fail</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 3.0.0 — December 21, 2024</p>
-        
+
         <h3>What's New</h3>
         <ul class="changelog-list">
           <li><strong>7 Aspect Ratios:</strong> Support for 3:2, 4:3, 16:9, 1:1, 2:3, 3:4, and 9:16 formats</li>
@@ -272,7 +287,7 @@
           <li><strong>Dynamic Grid Optimization:</strong> Smart column/row calculation based on aspect ratio and image count</li>
           <li><strong>Distributed Spacing:</strong> Evenly spaced layouts with no wasted vertical space</li>
         </ul>
-        
+
         <h3>Technical Improvements</h3>
         <ul class="changelog-list">
           <li>Dynamic grid calculation engine with 4-7 column layouts based on aspect ratio</li>
@@ -284,11 +299,11 @@
           <li>Grid parameters calculated once per sheet for better performance</li>
           <li>Full backward compatibility with v2.0.0 default settings</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 2.0.0 — December 21, 2024</p>
-        
+
         <h3>Major New Features</h3>
         <ul class="changelog-list">
           <li><strong>Resolution Settings:</strong> Choose from 2K, 4K, 6K, or 8K output</li>
@@ -296,7 +311,7 @@
           <li><strong>Professional Output:</strong> Generate ultra-high-resolution contact sheets for printing</li>
           <li><strong>Embedded Font (UI):</strong> Kode Mono now displays in the application interface</li>
         </ul>
-        
+
         <h3>Improvements</h3>
         <ul class="changelog-list">
           <li>Fixed font rendering in both UI and generated images</li>
@@ -304,18 +319,18 @@
           <li>Enhanced font path detection for packaged apps</li>
           <li>Complete font embedding solution (no system installation needed)</li>
         </ul>
-        
+
         <h3>Known Issues</h3>
         <ul class="changelog-list">
           <li>Not tested with folders containing multiple image sizes</li>
           <li>Not an exhaustive list of image filetypes tested</li>
           <li>Different image aspect ratios / film formats still to come</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 1.1.0 — December 21, 2024</p>
-        
+
         <h3>What's New</h3>
         <ul class="changelog-list">
           <li><strong>Embedded Font:</strong> Kode Mono font now built-in for generated images</li>
@@ -323,7 +338,7 @@
           <li><strong>Canvas Rendering:</strong> Improved text rendering using node-canvas</li>
           <li><strong>Zero Setup:</strong> Works immediately after installation</li>
         </ul>
-        
+
         <h3>Technical Improvements</h3>
         <ul class="changelog-list">
           <li>Replaced SVG text rendering with canvas-based rendering</li>
@@ -331,11 +346,11 @@
           <li>Better typography consistency across all systems</li>
           <li>Universal binary with proper native module rebuilding</li>
         </ul>
-        
+
         <hr style="border: none; border-top: 1px solid #242424; margin: 20px 0;">
-        
+
         <p class="version-label">Version 1.0.0 — December 20, 2024</p>
-        
+
         <h3>Initial Release</h3>
         <ul class="changelog-list">
           <li>Generate 2048×1782px contact sheets (6×7 grid, 42 images)</li>

@@ -59,7 +59,20 @@ async function scanFolder(folderPath) {
  * @param {string} imagePath - Path to the image file
  * @returns {Promise<Buffer>} Image buffer
  */
-async function loadImage(imagePath) {
+async function normalizeLoadedBuffer(buffer, rotatePortrait) {
+  if (!rotatePortrait) {
+    return buffer;
+  }
+
+  const metadata = await sharp(buffer).metadata();
+  if (metadata.width && metadata.height && metadata.height > metadata.width) {
+    return sharp(buffer).rotate(90).toBuffer();
+  }
+
+  return buffer;
+}
+
+async function loadImage(imagePath, rotatePortrait = false) {
   const ext = path.extname(imagePath).toLowerCase();
   const filename = path.basename(imagePath);
   
@@ -78,7 +91,7 @@ async function loadImage(imagePath) {
             .rotate() // Auto-rotate based on EXIF
             .toBuffer();
           console.log(`  ✓ Using embedded preview (respects color profile)`);
-          return buffer;
+          return normalizeLoadedBuffer(buffer, rotatePortrait);
         }
         
         console.log(`  ℹ️  No embedded preview, falling back to sips...`);
@@ -93,7 +106,7 @@ async function loadImage(imagePath) {
           const buffer = await sharp(sipsBuffer)
             .rotate() // Auto-rotate based on EXIF
             .toBuffer();
-          return buffer;
+          return normalizeLoadedBuffer(buffer, rotatePortrait);
         }
         
         console.log(`  ℹ️  sips failed, trying Sharp's embedded preview extraction...`);
@@ -114,7 +127,7 @@ async function loadImage(imagePath) {
           .toBuffer();
         
         console.log(`  ✓ Successfully loaded ${filename} (Sharp preview extraction)`);
-        return buffer;
+        return normalizeLoadedBuffer(buffer, rotatePortrait);
       } catch (rawError) {
         console.error(`  ✗ RAW processing failed for ${filename}:`);
         console.error(`    Error: ${rawError.message}`);
@@ -133,8 +146,8 @@ async function loadImage(imagePath) {
     const buffer = await sharp(imagePath)
       .rotate() // Auto-rotate based on EXIF
       .toBuffer();
-    
-    return buffer;
+
+    return normalizeLoadedBuffer(buffer, rotatePortrait);
   } catch (error) {
     console.error(`Error loading image ${filename}:`, error.message);
     console.error(`  File: ${imagePath}`);
@@ -213,7 +226,7 @@ async function resizeThumbnail(imageBuffer, targetWidth, targetHeight, aspectRat
  * @param {Function} progressCallback - Callback function for progress updates
  * @returns {Promise<Object>} Object with processed images array and failure stats
  */
-async function loadAndProcessImages(imagePaths, progressCallback) {
+async function loadAndProcessImages(imagePaths, progressCallback, rotatePortrait = false) {
   const processedImages = [];
   const failedImages = [];
   
@@ -228,7 +241,7 @@ async function loadAndProcessImages(imagePaths, progressCallback) {
     }
     
     try {
-      const buffer = await loadImage(imagePath);
+      const buffer = await loadImage(imagePath, rotatePortrait);
       
       if (buffer) {
         processedImages.push({
@@ -268,4 +281,3 @@ module.exports = {
   resizeThumbnail,
   loadAndProcessImages
 };
-
